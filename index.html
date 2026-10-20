@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173c59">
+  <title>PEP | Résidence des Berges de Seine</title>
+
+  <style>
+    :root {
+      --bleu: #173c59;
+      --bleu-clair: #eaf1f6;
+      --fond: #f6f8fa;
+      --texte: #253645;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--fond);
+      color: var(--texte);
+      line-height: 1.6;
+    }
+
+    header {
+      background: var(--bleu);
+      color: white;
+      padding: 28px 24px;
+    }
+
+    .entete {
+      max-width: 1100px;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 4vw, 34px);
+      line-height: 1.2;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      color: #d5e5ef;
+    }
+
+    .bouton {
+      display: inline-block;
+      padding: 15px 23px;
+      background: white;
+      color: var(--bleu);
+      border-radius: 9px;
+      font-weight: bold;
+      text-decoration: none;
+      text-align: center;
+      box-shadow: 0 3px 10px #0002;
+    }
+
+    .bouton:hover {
+      background: #e3edf4;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 28px auto;
+      padding: 0 20px;
+    }
+
+    .carte {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 22px;
+      box-shadow: 0 2px 12px #172f4510;
+    }
+
+    h2 {
+      color: var(--bleu);
+      margin: 0 0 12px;
+      font-size: 22px;
+    }
+
+    .alertes {
+      border-left: 5px solid #d8a544;
+    }
+
+    iframe {
+      width: 100%;
+      height: 350px;
+      border: 0;
+      background: white;
+    }
+
+    .services {
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(230px, 1fr)
+      );
+      gap: 16px;
+    }
+
+    .service {
+      background: var(--bleu-clair);
+      padding: 20px;
+      border-radius: 9px;
+    }
+
+    .service h3 {
+      margin: 0 0 8px;
+      color: var(--bleu);
+    }
+
+    footer {
+      padding: 25px;
+      text-align: center;
+      color: #667887;
+      font-size: 13px;
+    }
+
+    @media (max-width: 650px) {
+      .entete {
+        display: block;
+      }
+
+      .bouton {
+        display: block;
+        margin-top: 22px;
+      }
+
+      .carte {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="entete">
+      <div>
+        <h1>Résidence des Berges de Seine</h1>
+        <p>147 rue de Bercy — Paris 12e</p>
+      </div>
+
+      <a class="bouton"
+         href="https://script.google.com/macros/s/AKfycbw3GgRkJksxbbnlh2_Om1qgciyu3Ruh4s_YaAbBStpbip8dq6u8Yoe8w56XcThGwyNx/exec">
+        ACCÉDER AU PORTAIL ↗
+      </a>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="carte alertes">
+      <h2>Informations et alertes</h2>
+      <p>
+        Retrouvez les annonces importantes
+        concernant la vie de la résidence.
+      </p>
+
+      <!--
+        Le Google Docs des annonces sera
+        intégré ici dès que son URL
+        de publication sera disponible.
+      -->
+
+      <p id="annonces">
+        Aucune information particulière
+        publiée actuellement.
+      </p>
+    </section>
+
+    <section class="carte">
+      <h2>Bienvenue dans votre résidence</h2>
+      <p>
+        Cet espace numérique rassemble les
+        informations pratiques et les accès
+        aux services de la copropriété.
+      </p>
+
+      <div class="services">
+        <div class="service">
+          <h3>Conseil syndical</h3>
+          <p>
+            Informations sur les réunions,
+            projets et travaux.
+          </p>
+        </div>
+
+        <div class="service">
+          <h3>Vie de la résidence</h3>
+          <p>
+            Assemblées générales, relevés de
+            compteurs et interventions.
+          </p>
+        </div>
+
+        <div class="service">
+          <h3>Services numériques</h3>
+          <p>
+            Accédez aux applications de la
+            copropriété depuis le portail.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    Résidence des Berges de Seine
+    — 147 rue de Bercy, 75012 Paris
+  </footer>
+
+</body>
+</html>
