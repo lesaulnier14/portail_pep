@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow"><title>PEP - Essai Safari</title>
+<style>
+:root{font-family:system-ui,-apple-system,Arial,sans-serif;color:#1c3d56;background:#f4f7fa}*{box-sizing:border-box}
+body{margin:0}header{background:#173c59;color:white;padding:24px 20px}h1{font-size:23px;margin:0 auto;max-width:650px}
+main{max-width:650px;margin:0 auto;padding:17px}
+section{background:white;border-radius:12px;border:1px solid #dae4ea;padding:20px;margin:15px 0}
+p,li{line-height:1.55}.etat{font-size:20px;font-weight:750}.ok{color:#14633c}.attente{color:#8a6000}.err{color:#a52e2e}
+button{border:0;background:#173c59;color:white;border-radius:9px;padding:14px 18px;font-size:16px;margin:10px 0;cursor:pointer;width:100%}
+button.secondaire{background:#eaf1f6;color:#173c59}small{color:#586c7b;display:block;line-height:1.5}a{color:#174965}
+</style></head><body>
+<header><h1>PEP — Test de connexion Safari</h1></header>
+<main>
+<section aria-live="polite">
+<h2>État de votre navigateur</h2>
+<div id="etat" class="etat attente">Vérification…</div><p id="info"></p>
+<small>La présence d'un jeton ne prouve pas sa validité : seul le Portail SSO V2 la vérifie.</small>
+</section>
+<section>
+<h2>Tester la reconnexion</h2>
+<p>Ce test est séparé de la page d'accueil habituelle de la résidence. Il utilise le jeton mémorisé sur ce navigateur et le transmet au serveur SSO par HTTPS POST, jamais dans l'URL.</p>
+<button id="ouvrir" type="button">Ouvrir le portail SSO</button>
+<button id="actualiser" class="secondaire" type="button">Vérifier à nouveau le stockage</button>
+</section>
+<section>
+<h2>Première utilisation dans Safari</h2>
+<ol>
+<li>Si aucun jeton n'est présent, appuyez sur « Ouvrir le portail SSO » puis identifiez-vous avec votre code habituel.</li>
+<li>Sur la liste des applications, appuyez sur « Conserver ma connexion sur PEP (transfert sécurisé) ».</li>
+<li>Vérifiez le message « Jeton SSO conservé sur PEP » et revenez ici dans Safari.</li>
+<li>Fermez complètement Safari, ouvrez à nouveau cette page et appuyez sur « Ouvrir le portail SSO ».</li>
+</ol>
+<p><small>Faites le test hors navigation privée, toujours dans Safari. Votre session Chrome reste indépendante et inchangée.</small></p>
+</section>
+<p><a href="/">Retour à l'accueil PEP</a></p>
+</main>
+<script>
+(function(){
+"use strict";
+const TOKEN_KEY='PEP_SSO_SESSION_V2';
+const TOKEN_REGEXP=/^V2_[0-9a-f-]{36}[0-9a-f]{32}$/i;
+const SERVER_URL="https://script.google.com/macros/s/AKfycbw3GgRkJksxbbnlh2_Om1qgciyu3Ruh4s_YaAbBStpbip8dq6u8Yoe8w56XcThGwyNx/exec";
+const el=document.getElementById('etat');
+const info=document.getElementById('info');
+let token='';
+function afficher(){
+ try{
+  token=localStorage.getItem(TOKEN_KEY)||'';
+  if(TOKEN_REGEXP.test(token)){
+    el.className='etat ok';el.textContent='Jeton présent dans Safari';
+    info.textContent="Le jeton est conservé par PEP. Vérifiez maintenant sa validité en ouvrant le portail SSO.";
+  }else{
+    token='';el.className='etat attente';el.textContent='Aucun jeton mémorisé dans Safari';
+    info.textContent="Safari doit s'authentifier une première fois et enregistrer son propre jeton sur PEP.";
+  }
+ }catch(e){
+  token='';el.className='etat err';el.textContent='Stockage Safari inaccessible';
+  info.textContent="Ouvrez la page dans un onglet Safari normal, pas en navigation privée.";
+ }
+}
+document.getElementById('actualiser').addEventListener('click',afficher);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)afficher();});
+document.getElementById('ouvrir').addEventListener('click',function(){
+  if(!TOKEN_REGEXP.test(token)){
+    window.location.assign(SERVER_URL);
+    return;
+  }
+  const form=document.createElement('form');
+  form.action=SERVER_URL;form.method='POST';form.target='_self';form.acceptCharset='UTF-8';form.hidden=true;
+  const input=document.createElement('input');input.type='hidden';input.name='ssoToken';input.value=token;
+  form.appendChild(input);document.body.appendChild(form);form.submit();
+});
+afficher();
+})();
+</script>
+</body></html>
