@@ -143,6 +143,78 @@
       }
     }
   </style>
+
+  <!-- PEP-SOLUTION-SSO-V2 : stockage de la session sur le domaine PEP, en premier parti.
+       La validité reste exclusivement vérifiée par le serveur SSO V2. -->
+  <script>
+  (function () {
+    'use strict';
+    var CLE = 'PORTAIL_V2_SSO_TOKEN';
+    var REGEX = /^V2_[0-9a-f-]{36}[0-9a-f]{32}$/i;
+    var etat = {importe: false, stockage: true};
+
+    function lire() {
+      try { return localStorage.getItem(CLE) || ''; }
+      catch (e) { etat.stockage = false; return ''; }
+    }
+    function effacer() {
+      try { localStorage.removeItem(CLE); }
+      catch (e) { etat.stockage = false; }
+    }
+    function ecrire(token) {
+      try {
+        localStorage.setItem(CLE, token);
+        etat.importe = localStorage.getItem(CLE) === token;
+        if (!etat.importe) etat.stockage = false;
+      } catch (e) { etat.stockage = false; }
+    }
+
+    // Le fragment URL (#sso=...) n'est jamais transmis au serveur GitHub Pages.
+    // Il est retiré avant le chargement de l'iframe d'informations publiques.
+    var hash = window.location.hash || '';
+    if (hash.indexOf('#sso=') === 0 || hash === '#effacer_session') {
+      history.replaceState(null, '', location.pathname + location.search);
+      if (hash === '#effacer_session') {
+        effacer();
+      } else {
+        var recu = '';
+        try { recu = new URLSearchParams(hash.slice(1)).get('sso') || ''; }
+        catch (e) {}
+        if (REGEX.test(recu)) ecrire(recu);
+      }
+    }
+
+    function initialiser() {
+      var bouton = document.querySelector('a.bouton[href*="script.google.com/macros/s/"]');
+      if (!bouton) return;
+      var token = lire();
+      if (REGEX.test(token)) {
+        var url = new URL(bouton.href);
+        url.searchParams.set('token', token);
+        bouton.href = url.toString();
+        bouton.referrerPolicy = 'no-referrer';
+      }
+      var info = document.createElement('p');
+      info.style.fontSize = '12px';
+      info.style.marginTop = '12px';
+      info.style.color = '#d5e5ef';
+      info.textContent = !etat.stockage
+        ? 'Le navigateur empêche la conservation de la session.'
+        : REGEX.test(token)
+          ? 'Session mémorisée sur cet appareil ; le portail en vérifiera la validité.'
+          : 'Une première identification au portail sera nécessaire.';
+      bouton.insertAdjacentElement('afterend', info);
+      if (etat.importe && REGEX.test(token)) {
+        // Une fois le jeton reçu, PEP reprend immédiatement le parcours SSO.
+        window.location.replace(bouton.href);
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initialiser, {once:true});
+    } else initialiser();
+  })();
+  </script>
+
 </head>
 
 <body>
