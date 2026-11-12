@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Test de conservation de session — PEP</title>
+<style>
+:root{color-scheme:light;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;background:#f5f7fa;color:#19334b}main{max-width:580px;margin:22px auto;padding:20px}
+header{background:#173c59;color:white;padding:23px 20px}header h1{font-size:22px;line-height:1.2;margin:0 auto;max-width:580px}
+p{line-height:1.55}.box{background:white;border-radius:14px;padding:20px;box-shadow:0 2px 12px #10263a18;margin:16px 0}.etat{font-size:19px;font-weight:700;line-height:1.35}
+.ok{color:#14663c}.attente{color:#916100}.err{color:#a82424}
+button{background:#173c59;border:0;color:white;padding:13px 17px;margin:7px 7px 7px 0;border-radius:9px;font-size:16px;cursor:pointer}
+button.secondary{background:#eaf1f6;color:#173c59}small{font-size:13px;color:#586e7d}a{color:#173c59}
+</style></head><body>
+<header><h1>PEP — Test du stockage sur iPhone</h1></header>
+<main>
+<p>Ce diagnostic vérifie si <strong>Chrome ou Safari conserve une donnée entre deux ouvertures</strong>. Il ne demande aucun identifiant ni jeton SSO.</p>
+<section class="box" aria-live="polite"><div class="etat" id="etat">Vérification…</div><p id="detail"></p><small id="contexte"></small></section>
+<section class="box"><strong>Comment tester</strong>
+<ol>
+<li>Ouvrez cette page dans Chrome, en navigation normale.</li>
+<li>À la première ouverture, la page enregistre un témoin de test.</li>
+<li>Fermez l’onglet et Chrome, puis rouvrez <strong>exactement la même adresse</strong> dans Chrome.</li>
+<li>Relevez le message affiché en haut de la page.</li>
+</ol>
+<button type="button" id="relire">Relire la page</button>
+<button type="button" class="secondary" id="reset">Effacer le témoin et recommencer</button>
+<p><small>Ce test utilise uniquement le stockage local du site pep.147ruedebercy.fr ; aucune donnée personnelle n’est enregistrée ni envoyée.</small></p></section>
+<p><a href="/">Retour à l’accueil PEP</a></p>
+</main>
+<script>
+(function(){
+"use strict";
+var key="PEP_TEST_PERSISTANCE_20261112";
+var info=document.getElementById("detail"),etat=document.getElementById("etat"),contexte=document.getElementById("contexte");
+var mobile=/iPhone|iPad|iPod/.test(navigator.userAgent);
+var chrome=/CriOS/.test(navigator.userAgent);
+var standalone=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;
+contexte.textContent="Environnement : "+(chrome?"Chrome":mobile?"iPhone/iPad (navigateur)":"navigateur")+" — "+(standalone?"icône écran d'accueil":"onglet navigateur");
+function mesurer(){
+try{
+var raw=localStorage.getItem(key);
+if(raw){
+var v=JSON.parse(raw);
+if(!v||v.test!=="pep_stockage_v1"||!v.date)throw Error("Donnée illisible");
+etat.className="etat ok";etat.textContent="Le témoin a été retrouvé.";
+info.textContent="Cette page a retrouvé une donnée enregistrée lors d'une précédente ouverture ("+new Date(v.date).toLocaleString("fr-FR")+"). Si vous avez bien fermé Chrome entre-temps, son stockage fonctionne sur cette adresse.";
+}else{
+localStorage.setItem(key,JSON.stringify({test:"pep_stockage_v1",date:new Date().toISOString()}));
+if(!localStorage.getItem(key))throw Error("Écriture non conservée");
+etat.className="etat attente";etat.textContent="Premier passage : témoin enregistré.";
+info.textContent="Fermez maintenant l'onglet et Chrome, puis ouvrez de nouveau cette même adresse dans Chrome. Vous devriez voir « Le témoin a été retrouvé ».";
+}
+}catch(e){
+etat.className="etat err";etat.textContent="Le stockage local ne fonctionne pas ici.";
+info.textContent="Le navigateur refuse ou ne conserve pas les données locales dans ce contexte. Vérifiez que vous êtes en navigation normale, non privée.";
+}
+}
+document.getElementById("relire").addEventListener("click",function(){location.reload()});
+document.getElementById("reset").addEventListener("click",function(){try{localStorage.removeItem(key)}catch(e){}location.reload()});
+mesurer();
+})();
+</script></body></html>
