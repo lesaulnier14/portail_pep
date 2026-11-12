@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
+<title>PEP — Réception sécurisée du jeton SSO</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#19334b;background:#f4f7fa}
+body{margin:0}header{background:#173c59;color:white;padding:23px 20px}header h1{font-size:22px;max-width:620px;margin:0 auto}
+main{max-width:650px;padding:22px;margin:0 auto}section{border-radius:14px;background:#fff;padding:22px;box-shadow:0 2px 12px #10263a18}
+h2{margin:0 0 12px;font-size:20px}p{line-height:1.55}.ok{color:#147047}.err{color:#ad3131}.attente{color:#8e660a}a{color:#163f60}
+small{color:#596b78}button{border:0;background:#173c59;color:#fff;padding:13px 17px;border-radius:8px;font-size:16px}
+</style></head><body>
+<header><h1>PEP — Connexion sécurisée sur iPhone</h1></header>
+<main>
+<section aria-live="polite"><h2 id="etat" class="attente">Établissement de la connexion…</h2>
+<p id="detail">Cette page attend une confirmation du Portail SSO V2.</p>
+<p><a href="/essai-session-iphone/">Ouvrir le contrôle de session PEP</a></p>
+<p><small>Le jeton n'est jamais placé dans l'adresse de cette page. Il est transmis entre les fenêtres par un échange vérifiant l'origine de l'émetteur.</small></p></section>
+</main>
+<script>
+(function(){
+'use strict';
+var KEY='PEP_SSO_TEST_JETON_20261112';
+var TOKEN=/^V2_[0-9a-f-]{36}[0-9a-f]{32}$/i;
+var NONCE=/^[0-9a-f]{32}$/i;
+var params=new URLSearchParams(location.search);
+var nonce=params.get('nonce')||'';
+var deconnexion=location.hash==='#deconnexion';
+var etat=document.getElementById('etat'),detail=document.getElementById('detail'),termine=false;
+function affichage(s,d,classe){etat.textContent=s;detail.textContent=d;etat.className=classe;}
+history.replaceState(null,'',location.pathname);
+if(deconnexion){
+  try{localStorage.removeItem(KEY);affichage('Copie locale du jeton effacée','Attention : seul le portail SSO peut révoquer la session côté serveur.','ok');}
+  catch(e){affichage('Effacement impossible','Le stockage local de ce navigateur n’est pas accessible.','err');}
+  return;
+}
+if(!NONCE.test(nonce)||!window.opener){
+ affichage('Transfert impossible','Cette page doit être ouverte par le bouton du portail SSO de test. Aucun jeton n’a été transmis.','err');return;
+}
+function origineValide(o){
+ try {
+  var u=new URL(o);
+  var h=u.hostname.toLowerCase();
+  return u.protocol==='https:'&&(h==='script.google.com'||h==='script.googleusercontent.com'||h.endsWith('.script.googleusercontent.com'));
+ }catch(e){return false;}
+}
+function demarrer(){
+ if(termine)return;
+ try{
+  window.opener.postMessage({type:'PEP_SSO_READY',nonce:nonce},'*'); // Aucune donnée secrète dans ce message d'amorçage.
+ }catch(e){affichage('Fenêtre de retour inaccessible','Le navigateur bloque la liaison avec le portail SSO.','err');termine=true;}
+}
+window.addEventListener('message',function(ev){
+ if(termine||ev.source!==window.opener||!origineValide(ev.origin))return;
+ var msg=ev.data;
+ if(!msg||msg.type!=='PEP_SSO_TOKEN'||msg.nonce!==nonce||!TOKEN.test(String(msg.token||'')))return;
+ try {
+  localStorage.setItem(KEY,msg.token);
+  if(localStorage.getItem(KEY)!==msg.token)throw Error('Stockage non persistant');
+  termine=true;
+  affichage('Jeton SSO conservé sur PEP','Vous pouvez fermer cette fenêtre, rouvrir Chrome et vérifier la session dans la page de contrôle.','ok');
+  if(window.opener){try{window.opener.postMessage({type:'PEP_SSO_SAVED',nonce:nonce},ev.origin);}catch(e){}}
+  window.opener=null;
+ }catch(e){
+  termine=true;
+  affichage('Conservation impossible','Le navigateur n’a pas enregistré le jeton.','err');
+ }
+});
+demarrer();
+var reprises=0;
+var timer=setInterval(function(){
+ if(termine){clearInterval(timer);return;}
+ if(++reprises>24){clearInterval(timer);affichage('Pas de réponse du portail SSO','Le navigateur a peut-être bloqué l’échange entre les deux fenêtres. Aucun jeton n’a été enregistré.','err');return;}
+ demarrer();
+},500);
+})();
+</script></body></html>
