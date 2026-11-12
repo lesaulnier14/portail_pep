@@ -40,7 +40,7 @@ function origineValide(o){
  try {
   var u=new URL(o);
   var h=u.hostname.toLowerCase();
-  return u.protocol==='https:'&&(h==='script.google.com'||h==='script.googleusercontent.com'||h.endsWith('.script.googleusercontent.com'));
+  return u.protocol==='https:'&&(h==='script.google.com'||h==='script.googleusercontent.com'||(h.endsWith('.script.googleusercontent.com') || /^[a-z0-9-]+-script\.googleusercontent\.com$/.test(h)));
  }catch(e){return false;}
 }
 var tentatives=0, trames=0, recus=0, dernier='', rejets=0;
