@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<title>PEP — Recette SSO iPhone</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#243645;background:#f4f7fa}
+*{box-sizing:border-box}body{margin:0}header{background:#173c59;color:#fff;padding:24px 20px}header h1{font-size:23px;max-width:700px;margin:0 auto}
+main{padding:16px;max-width:720px;margin:0 auto}section{background:#fff;border:1px solid #dce3e9;border-radius:14px;margin:16px 0;padding:20px;box-shadow:0 1px 5px #0022}
+h2{font-size:19px;margin:0 0 10px}p{line-height:1.52;margin:8px 0 14px}button{cursor:pointer;background:#173c59;color:#fff;border:0;border-radius:9px;font-size:16px;padding:13px 15px;margin:8px 7px 5px 0}button:disabled{opacity:.5;cursor:not-allowed}button.secondaire{background:#eaf1f6;color:#173c59}
+label{display:block;font-size:14px;font-weight:650;margin-top:12px}input{font-size:15px;display:block;width:100%;padding:12px;margin:7px 0 10px;border:1px solid #99acbc;border-radius:8px}
+.ok{color:#136b43}.warn{color:#8f6205}.err{color:#a32828}.status{font-size:19px;font-weight:750;line-height:1.3}
+small{display:block;color:#596b78;line-height:1.5}a{color:#16456d}li{margin-bottom:8px;line-height:1.4}
+</style>
+</head>
+<body>
+<header><h1>PEP — Essai de connexion persistante sur iPhone</h1></header>
+<main>
+<section aria-live="polite">
+  <h2>État de la connexion sur cet appareil</h2>
+  <div id="statut" class="status warn">Vérification en cours…</div>
+  <p id="explication"></p>
+  <small>Seul le portail SSO V2 peut confirmer qu'un jeton est encore valable. Cette page vérifie uniquement sa présence locale.</small>
+</section>
+<section>
+  <h2>Portail SSO de test</h2>
+  <p>Avant le premier essai, indiquez l’adresse <strong>/dev</strong> obtenue dans Apps Script, via « Déployer → Tester les déploiements ». Elle doit correspondre à la version d’essai du portail.</p>
+  <label for="cible">Adresse de test Apps Script (/dev)</label>
+  <input id="cible" inputmode="url" type="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../dev">
+  <button id="enregistrer" type="button" class="secondaire">Mémoriser l’adresse de test</button>
+  <button id="ouvrir" type="button">Ouvrir le portail SSO de test</button>
+  <div id="information" aria-live="polite"></div>
+</section>
+<section>
+  <h2>Déroulement de l'essai</h2>
+  <ol>
+    <li>Ouvrez le portail de test et identifiez-vous une fois avec votre code habituel.</li>
+    <li>Dans le portail de test, cliquez sur « Terminer la connexion sur cet appareil ».</li>
+    <li>Vous reviendrez sur cette page : un jeton doit alors être indiqué comme mémorisé.</li>
+    <li>Fermez complètement Chrome, rouvrez cette même adresse et vérifiez que le jeton est toujours mémorisé.</li>
+    <li>Cliquez sur « Ouvrir le portail SSO de test » : le portail doit reconnaître la session sans nouveau code.</li>
+  </ol>
+  <button type="button" id="effacer" class="secondaire">Effacer uniquement le jeton de ce test</button>
+  <p><small>Cette opération efface la copie conservée sur cet appareil, mais ne révoque pas la session sur le serveur. Pour révoquer une session, utilisez aussi « Se déconnecter » dans le portail SSO.</small></p>
+</section>
+<p><a href="/">Retour à la page PEP habituelle</a></p>
+</main>
+<script>
+(function(){
+'use strict';
+const CLE = 'PEP_SSO_TEST_JETON_20261112';
+const CLE_URL = 'PEP_SSO_TEST_URL_20261112';
+const FORM = /^V2_[0-9a-f-]{36}[0-9a-f]{32}$/i;
+const statut = document.getElementById('statut');
+const explication = document.getElementById('explication');
+const info = document.getElementById('information');
+const champ = document.getElementById('cible');
+let jeton = '';
+let url = '';
+function afficher(s, e, type) {
+  statut.className='status '+type;
+  statut.textContent=s;
+  explication.textContent=e;
+}
+function validerUrl(candidate) {
+  try {
+    const a=new URL(String(candidate || '').trim());
+    if(a.protocol !== 'https:' || a.hostname !== 'script.google.com' || !/\/dev$/.test(a.pathname) || a.username || a.password || a.search || a.hash){
+      return '';
+    }
+    return a.href;
+  }catch(e){return '';}
+}
+function lecture(k){ try{return localStorage.getItem(k)||'';} catch(e){return '';} }
+function ecriture(k,v){ localStorage.setItem(k,v); if(localStorage.getItem(k)!==v) throw Error('Impossible de relire la donnée enregistrée'); }
+const fragment=location.hash;
+if(fragment.startsWith('#sso=')){
+  // Supprimer immédiatement le jeton de la barre d'adresse et de l'historique courant.
+  history.replaceState(null,'',location.pathname+location.search);
+  let reçu='';
+  try{ reçu=new URLSearchParams(fragment.slice(1)).get('sso')||''; } catch(e){}
+  if(FORM.test(reçu)) {
+    try{ecriture(CLE,reçu); info.textContent='Jeton reçu et mémorisé dans Chrome sur le domaine PEP.';}
+    catch(e){info.textContent='Le jeton a été reçu, mais le navigateur refuse son stockage local.';}
+  } else {info.textContent='Jeton reçu avec un format invalide : il a été refusé.';}
+}
+jeton=lecture(CLE);
+url=validerUrl(lecture(CLE_URL));
+champ.value=url;
+if(FORM.test(jeton)){
+  afficher('Jeton présent dans Chrome','Le portail de test doit encore confirmer sa validité.', 'ok');
+} else {
+  afficher('Aucun jeton mémorisé','Connectez-vous une première fois depuis le portail de test.', 'warn');
+}
+document.getElementById('enregistrer').addEventListener('click',function(){
+  const candidate=validerUrl(champ.value);
+  if(!candidate){info.textContent='Adresse invalide : collez l’adresse /dev du portail Google Apps Script de test.';return;}
+  try{ecriture(CLE_URL,candidate);url=candidate;info.textContent='Adresse de test mémorisée.';}
+  catch(e){info.textContent='Chrome n’a pas conservé l’adresse de test.';}
+});
+document.getElementById('ouvrir').addEventListener('click',function(){
+  const dest=validerUrl(champ.value);
+  if(!dest){info.textContent='Indiquez d’abord l’adresse /dev du déploiement de test.';return;}
+  try{ecriture(CLE_URL,dest);url=dest;}catch(e){}
+  const cible=new URL(dest);
+  if(FORM.test(jeton)) cible.searchParams.set('token',jeton);
+  // Ne jamais afficher le jeton ni le conserver dans une URL de cette page.
+  location.assign(cible.toString());
+});
+document.getElementById('effacer').addEventListener('click',function(){
+  try{localStorage.removeItem(CLE);}catch(e){}
+  jeton='';
+  afficher('Jeton de test effacé','Pour révoquer le jeton sur le serveur, utilisez aussi la déconnexion du portail SSO.', 'warn');
+  info.textContent='La copie locale du jeton de test a été effacée.';
+});
+})();
+</script>
+</body></html>
