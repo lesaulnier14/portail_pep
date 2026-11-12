@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173c59">
+  <meta name="referrer" content="no-referrer">
   <title>PEP | Résidence des Berges de Seine</title>
 
   <style>
@@ -64,6 +65,9 @@
       text-decoration: none;
       text-align: center;
       box-shadow: 0 3px 10px #0002;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
     }
 
     .bouton:hover {
@@ -154,10 +158,9 @@
         <p>147 rue de Bercy — Paris 12e</p>
       </div>
 
-      <a class="bouton"
-         href="https://script.google.com/macros/s/AKfycbw3GgRkJksxbbnlh2_Om1qgciyu3Ruh4s_YaAbBStpbip8dq6u8Yoe8w56XcThGwyNx/exec">
+      <button type="button" class="bouton" id="ouvrirPortail">
         ACCÉDER AU PORTAIL ↗
-      </a>
+      </button>
     </div>
   </header>
 
@@ -229,6 +232,42 @@
     Résidence des Berges de Seine
     — 147 rue de Bercy, 75012 Paris
   </footer>
+
+<script>
+(function(){
+  'use strict';
+  // La validité et les habilitations restent vérifiées par le serveur SSO V2.
+  // PEP ne fait que mémoriser la preuve locale, sans connaître l'identité.
+  const CLE='PEP_SSO_SESSION_V2';
+  const URL_SSO='https://script.google.com/macros/s/AKfycbw3GgRkJksxbbnlh2_Om1qgciyu3Ruh4s_YaAbBStpbip8dq6u8Yoe8w56XcThGwyNx/exec';
+  const FORMAT=/^V2_[0-9a-f-]{36}[0-9a-f]{32}$/i;
+  const bouton=document.getElementById('ouvrirPortail');
+  if(!bouton) return;
+  bouton.addEventListener('click',function(){
+    let token='';
+    try{token=localStorage.getItem(CLE)||'';}catch(e){}
+    if(!FORMAT.test(token)){
+      location.assign(URL_SSO); // Première connexion ou stockage indisponible.
+      return;
+    }
+    // Pas de jeton dans l'URL : soumission de formulaire top-level par HTTPS POST.
+    const form=document.createElement('form');
+    form.method='POST';
+    form.action=URL_SSO;
+    form.target='_self';
+    form.acceptCharset='UTF-8';
+    form.hidden=true;
+    const input=document.createElement('input');
+    input.type='hidden';
+    input.name='ssoToken';
+    input.value=token;
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+  });
+})();
+</script>
+
 </body>
 </html>
 
