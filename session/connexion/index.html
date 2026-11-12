@@ -34,7 +34,14 @@ if(deconnexion){
   return;
 }
 if(!NONCE.test(nonce)||!window.opener){
- affichage('Transfert impossible','Cette page doit être ouverte par le bouton du portail SSO de test. Aucun jeton n’a été transmis.','err');return;
+ var nonceOK=NONCE.test(nonce);
+ var openerOK=Boolean(window.opener);
+ affichage('Transfert impossible',
+   'Diagnostic sans jeton : liaison='+ (nonceOK?'présente':'absente') +
+   ' ; fenêtre d’origine='+(openerOK?'présente':'absente')+
+   '. Le transfert a été refusé ; aucune donnée de session n’a été enregistrée.',
+   'err');
+ return;
 }
 function origineValide(o){
  try {
