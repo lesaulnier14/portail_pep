@@ -43,16 +43,43 @@ function origineValide(o){
   return u.protocol==='https:'&&(h==='script.google.com'||h==='script.googleusercontent.com'||h.endsWith('.script.googleusercontent.com'));
  }catch(e){return false;}
 }
+var tentatives=0, trames=0, recus=0, dernier='', rejets=0;
 function demarrer(){
  if(termine)return;
+ tentatives++;
  try{
-  window.opener.postMessage({type:'PEP_SSO_READY',nonce:nonce},'*'); // Aucune donnée secrète dans ce message d'amorçage.
+  // Aucun jeton n'est transmis dans ces messages READY.
+  window.opener.postMessage({type:'PEP_SSO_READY',nonce:nonce},'*');
+  // Apps Script charge son HTML dans une iframe. Dans certains contextes
+  // Chrome iOS ouvre le nouvel onglet depuis la fenêtre wrapper de Google.
+  // On avertit aussi ses frames pour atteindre le listener de l'HTML Service.
+  var total=0;
+  try{total=Math.min(window.opener.length,12);}catch(e){}
+  for(var i=0;i<total;i++){
+    try{
+      var f=window.opener[i];
+      if(f&&f!==window.opener){
+        f.postMessage({type:'PEP_SSO_READY',nonce:nonce},'*');
+        trames++;
+      }
+    }catch(e){}
+  }
+  if(tentatives===1) affichage('Connexion entre fenêtres en cours',
+    'Message non secret envoyé au portail SSO. Ne fermez pas cette page.','attente');
  }catch(e){affichage('Fenêtre de retour inaccessible','Le navigateur bloque la liaison avec le portail SSO.','err');termine=true;}
 }
 window.addEventListener('message',function(ev){
- if(termine||ev.source!==window.opener||!origineValide(ev.origin))return;
- var msg=ev.data;
- if(!msg||msg.type!=='PEP_SSO_TOKEN'||msg.nonce!==nonce||!TOKEN.test(String(msg.token||'')))return;
+ if(termine)return;
+ recus++;
+ var msg=ev.data||{};
+ // Diagnostic limité à la métadonnée, jamais au contenu ni au jeton.
+ dernier='origin='+String(ev.origin||'(vide)')+
+   ', type='+String(msg.type||'(absent)').slice(0,35)+
+   ', sourceOpener='+(ev.source===window.opener);
+ if(ev.source!==window.opener||!origineValide(ev.origin)){
+   rejets++;return;
+ }
+ if(msg.type!=='PEP_SSO_TOKEN'||msg.nonce!==nonce||!TOKEN.test(String(msg.token||'')))return;
  try {
   localStorage.setItem(KEY,msg.token);
   if(localStorage.getItem(KEY)!==msg.token)throw Error('Stockage non persistant');
@@ -69,7 +96,7 @@ demarrer();
 var reprises=0;
 var timer=setInterval(function(){
  if(termine){clearInterval(timer);return;}
- if(++reprises>24){clearInterval(timer);affichage('Pas de réponse du portail SSO','Le navigateur a peut-être bloqué l’échange entre les deux fenêtres. Aucun jeton n’a été enregistré.','err');return;}
+ if(++reprises>24){clearInterval(timer);affichage('Pas de réponse du portail SSO', 'Diagnostic (sans jeton) : '+tentatives+' tentatives, '+trames+' envois aux sous-fenêtres, '+recus+' message(s) reçu(s), '+rejets+' rejet(s). '+(dernier?'Dernier : '+dernier+'. ':'')+'Aucun nouveau jeton n’a été enregistré.','err');return;}
  demarrer();
 },500);
 })();
